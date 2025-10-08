@@ -8,12 +8,12 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
       "src": "/static/(.*)",
       "dest": "/static/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
     },
     {
       "src": "/(.*)",
@@ -24,5 +24,8 @@
     "api/index.py": {
       "maxDuration": 30
     }
+  },
+  "env": {
+    "BACKEND_URL": "@backend_url"
   }
 }

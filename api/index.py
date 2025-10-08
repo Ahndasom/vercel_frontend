@@ -1,23 +1,20 @@
-from flask import Flask, render_template_string, send_from_directory, jsonify, request
+import os
+import sys
+
+# 상위 디렉토리를 Python 경로에 추가
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from flask import Flask, render_template_string, jsonify, request
 from components.event_summary_panel import event_summary_bp
 from components.event_analytics_graphs import event_analytics_bp
 from components.channel_stats_panel import channel_stats_bp
 from components.channel_detail_modal import channel_detail_bp
-import os
 import requests
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../static')
+
+# 백엔드 URL - 환경변수에서 가져오기 (Vercel 설정에서 추가)
 BACKEND_URL = os.environ.get('BACKEND_URL', 'http://127.0.0.1:8000')
-
-# 정적 파일 디렉토리 설정 - vercel에서는 static 폴더 자동 처리
-'''
-app.static_folder = 'static'
-
-# 정적 파일 서빙을 위한 라우트 추가
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    return send_from_directory(app.static_folder, filename)
-'''
 
 # 컴포넌트 블루프린트 등록
 app.register_blueprint(event_summary_bp, url_prefix='/api')
@@ -26,8 +23,7 @@ app.register_blueprint(channel_stats_bp, url_prefix='/api')
 app.register_blueprint(channel_detail_bp, url_prefix='/api')
 
 
-
-# 날짜 범위 API 라우트 추가
+# 날짜 범위 API 라우트
 @app.route('/api/date-range')
 def get_date_range():
     """날짜 범위 조회 API 프록시"""
@@ -46,6 +42,7 @@ def get_date_range():
         print(f"[DATE_RANGE] 연결 오류: {error_msg}")
         return jsonify({"error": error_msg}), 500
 
+
 @app.route('/')
 def dashboard():
     """통합 대시보드 메인 페이지"""
@@ -58,10 +55,11 @@ def health_check():
     """헬스체크 엔드포인트"""
     return jsonify({"status": "healthy", "service": "VODA NVR Dashboard"})
 
-# 채널 상세 정보 API 라우트 확인을 위한 디버그 라우트 (개발용)
+
+# 채널 상세 정보 API 라우트 확인을 위한 디버그 라우트
 @app.route('/api/debug/routes')
 def debug_routes():
-    """등록된 라우트 확인용 (개발 전용)"""
+    """등록된 라우트 확인용"""
     routes = []
     for rule in app.url_map.iter_rules():
         routes.append({
@@ -72,7 +70,7 @@ def debug_routes():
     return {'routes': routes}
 
 
-# ============ 통합 HTML 템플릿 ============
+# HTML 템플릿
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="ko">
@@ -90,7 +88,7 @@ HTML_TEMPLATE = '''
             <h1><span class="voda-nvr">VODA NVR</span> <span class="smart-dashboard">Smart Dashboard</span></h1>
             <p id="reportTitle" style="display: none;">실시간 이벤트 모니터링 및 채널 관리 시스템</p>
         </div>
-         
+
         <!-- 상태 표시 -->
         <div id="status" class="status"></div>
 
@@ -203,10 +201,13 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
+
+# Vercel serverless function handler
+def handler(request):
+    with app.request_context(request.environ):
+        return app.full_dispatch_request()
+
+
+# 로컬 개발용
 if __name__ == '__main__':
-    CONFIG_PORT=8006
-    print("🚀 VODA NVR Smart Dashboard 시작")
-    print(f"🌐 http://127.0.0.1:{CONFIG_PORT} 에서 실행 중")
-    print("🔗 백엔드 API: http://127.0.0.1:8000")
-    print("🔍 라우트 확인: http://127.0.0.1:8006/api/debug/routes")
-    app.run(debug=True, host='127.0.0.1', port=CONFIG_PORT)
+    app.run(debug=True, host='127.0.0.1', port=8006)
