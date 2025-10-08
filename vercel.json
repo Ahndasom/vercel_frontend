@@ -21,6 +21,6 @@
     }
   ],
   "env": {
-    "BACKEND_URL": "@backend_url"
+    "BACKEND_URL": "https://charissa-reviewable-pseudoimpartially.ngrok-free.dev"
   }
 }
